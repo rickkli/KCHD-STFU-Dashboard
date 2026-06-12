@@ -24,7 +24,7 @@ jobs:
         run: pip install -r requirements.txt
         
       - name: Run prepare script
-        run: python prepare_stfu_calendar.py --clear-cache --future-only
+        run: python prepare_stfu_calendar.py --reset-cache --future-only
         
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
