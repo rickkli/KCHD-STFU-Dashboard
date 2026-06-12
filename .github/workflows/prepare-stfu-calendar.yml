@@ -1,0 +1,35 @@
+name: Prepare STFU Calendar (weekly)
+
+on:
+  schedule:
+    - cron: '0 21 * * Wed' # runs Wednesdays 21:00 UTC (5pm EST) during Eastern Daylight Time, 20:00 UTC (4pm EST) during Eastern Standard Time
+  workflow_dispatch: {} # allows manual runs
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write 
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run prepare script
+        run: python prepare_stfu_calendar.py --clear-cache --future-only
+        
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Automated data update: prepared calendar and cache"
+          file_pattern: |
+            stfu_calendar_prepared.csv
+            geocode_cache.csv

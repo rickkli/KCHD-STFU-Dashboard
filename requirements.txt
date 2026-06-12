@@ -1,0 +1,7 @@
+pandas
+geopy
+icalendar
+requests
+streamlit
+folium
+streamlit-folium
