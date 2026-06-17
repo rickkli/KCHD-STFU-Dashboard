@@ -352,7 +352,13 @@ def get_current_month_start(reference_date: date | datetime | None = None) -> pd
 
 def filter_calendar_to_current_month_and_future(df: pd.DataFrame, reference_date: date | datetime | None = None) -> pd.DataFrame:
     month_start = get_current_month_start(reference_date=reference_date)
-    filtered = df[df["start_datetime"] >= month_start].copy()
+    
+    # We keep events that end at or after the start of the current month.
+    # This captures:
+    # 1. Events that started in the past but are still ongoing (end_datetime >= month_start)
+    # 2. Events that start within the current month or later (start_datetime >= month_start)
+    filtered = df[df["end_datetime"] >= month_start].copy()
+    
     return filtered.reset_index(drop=True)
 
 
