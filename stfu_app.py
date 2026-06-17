@@ -135,15 +135,27 @@ def build_popup_html(row) -> str:
         """
 
 
-def add_cluster_markers(cluster_layer, rows, selected_record_id: str | None):
+def add_cluster_markers(cluster_layer, rows, selected_record_id: str | None, dashboard_map: folium.Map, is_cluster: bool):
     for row in rows:
-        popup = folium.Popup(build_popup_html(row), max_width=300, show=row.record_id == selected_record_id)
-        folium.Marker(
+        is_selected = row.record_id == selected_record_id
+        
+        # Only show the popup on load if it's selected AND NOT part of a shared-location cluster
+        show_popup = is_selected and not is_cluster
+        popup = folium.Popup(build_popup_html(row), max_width=300, show=show_popup)
+        
+        marker = folium.Marker(
             location=[row.latitude, row.longitude],
             popup=popup,
             tooltip=row.business_name or "STFU Unit",
             icon=folium.Icon(color=MARKER_COLOR, icon=MARKER_ICON, prefix="fa"),
-        ).add_to(cluster_layer)
+        )
+        
+        # Add directly to the main map if selected so the popup opens reliably, 
+        # BUT only if it isn't part of a cluster stack.
+        if is_selected and not is_cluster:
+            marker.add_to(dashboard_map)
+        else:
+            marker.add_to(cluster_layer)
 
 
 def add_persistent_cluster_click_behavior(dashboard_map: folium.Map, cluster_layer: MarkerCluster):
@@ -212,9 +224,14 @@ def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
 
     for _, group in grouped_rows:
         rows = list(group.itertuples())
-        target_cluster = persistent_cluster if len(rows) > 1 else regular_cluster
-        add_cluster_markers(target_cluster, rows, selected_record_id)
-        has_persistent_clusters = has_persistent_clusters or len(rows) > 1
+        is_cluster = len(rows) > 1  # Determine if this exact location has multiple units
+        
+        target_cluster = persistent_cluster if is_cluster else regular_cluster
+        
+        # Pass the is_cluster flag to your marker builder
+        add_cluster_markers(target_cluster, rows, selected_record_id, dashboard_map, is_cluster)
+        
+        has_persistent_clusters = has_persistent_clusters or is_cluster
 
     if has_persistent_clusters:
         add_persistent_cluster_click_behavior(dashboard_map, persistent_cluster)
