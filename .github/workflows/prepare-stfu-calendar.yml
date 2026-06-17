@@ -2,7 +2,7 @@ name: Prepare STFU Calendar (weekly)
 
 on:
   schedule:
-    - cron: '0 21 * * Wed' # runs Wednesdays 21:00 UTC (5pm EST) during Eastern Daylight Time, 20:00 UTC (4pm EST) during Eastern Standard Time
+    - cron: '0 3 * * 4' # runs Thursdays 03:00 UTC (11pm EDT Wednesday during Daylight Time, 10pm EST Wednesday during Standard Time)
   workflow_dispatch: {} # allows manual runs
 
 jobs:
