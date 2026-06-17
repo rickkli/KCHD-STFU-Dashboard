@@ -13,10 +13,10 @@ jobs:
       contents: write 
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.9'
           
@@ -27,7 +27,7 @@ jobs:
         run: python prepare_stfu_calendar.py --reset-cache --future-only
         
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Automated data update: prepared calendar and cache"
           file_pattern: |
