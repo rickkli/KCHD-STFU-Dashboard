@@ -108,11 +108,17 @@ def load_dataset(dataset_path: Path) -> pd.DataFrame:
 
 
 def get_default_date_bounds(df: pd.DataFrame):
-    valid_dates = df["start_date_parsed"].dropna()
-    if valid_dates.empty:
+    valid_start_dates = df["start_date_parsed"].dropna()
+    valid_end_dates = df["end_date_parsed"].dropna()
+    
+    if valid_start_dates.empty:
         today = pd.Timestamp.today().normalize()
         return today.date(), today.date()
-    return valid_dates.min().date(), valid_dates.max().date()
+        
+    min_date = valid_start_dates.min().date()
+    max_date = valid_end_dates.max().date()
+    
+    return min_date, max_date
 
 
 def normalize_date_range(date_range, min_date, max_date):
@@ -402,7 +408,18 @@ def main():
         st.error(f"Failed to load prepared calendar dataset: {exc}")
         st.stop()
 
+    # 1. Get the true absolute boundaries of your data
     min_date, max_date = get_default_date_bounds(df)
+
+    # 2. Dynamically calculate the first day of the current month
+    first_of_month = pd.Timestamp.today().replace(day=1).date()
+
+    # 3. Safety check: Ensure default_start falls strictly between min_date and max_date
+    # to satisfy Streamlit's widget validation constraints.
+    if min_date <= first_of_month <= max_date:
+        default_start = first_of_month
+    else:
+        default_start = min_date
 
     left_col, right_col = st.columns([1, 3], gap="medium")
 
@@ -411,9 +428,9 @@ def main():
             st.subheader("Filters")
             date_range = st.date_input(
                 "Date range",
-                value=(min_date, max_date),
-                min_value=min_date,
-                max_value=max_date,
+                value=(default_start, max_date),  # Defaults to first of current month
+                min_value=default_start,          # Lower limit is the same as default start to ensure it's valid
+                max_value=max_date,               # Upper limit reflects true latest event end date
                 format="MM/DD/YYYY",
             )
             search_text = st.text_input("Search", placeholder="Search by business name")
