@@ -79,11 +79,23 @@ def load_dataset(dataset_path: Path) -> pd.DataFrame:
     df["geocode_address"] = df["geocode_address"].map(clean_text)
     df["geocode_status"] = df["geocode_status"].map(clean_text).fillna("not_geocoded")
 
+    # Parse start date
     df["start_datetime"] = pd.to_datetime(
         df["start_date"].fillna("").astype(str) + " " + df["start_time"].fillna("").astype(str),
         errors="coerce",
     )
     df["start_date_parsed"] = df["start_datetime"].dt.normalize()
+    
+    # Parse end date
+    df["end_datetime"] = pd.to_datetime(
+        df["end_date"].fillna("").astype(str) + " " + df["end_time"].fillna("").astype(str),
+        errors="coerce",
+    )
+    df["end_date_parsed"] = df["end_datetime"].dt.normalize()
+    
+    # Fallback: If an event has no end date, assume it ends on the same day it starts
+    df["end_date_parsed"] = df["end_date_parsed"].fillna(df["start_date_parsed"])
+
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
     df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
 
@@ -111,9 +123,16 @@ def normalize_date_range(date_range, min_date, max_date):
 
 def filter_records(df: pd.DataFrame, date_range, search_text: str) -> pd.DataFrame:
     start_date, end_date = date_range
-    filtered = df.loc[
-        df["start_date_parsed"].between(pd.Timestamp(start_date), pd.Timestamp(end_date), inclusive="both")
-    ]
+    filter_start = pd.Timestamp(start_date)
+    filter_end = pd.Timestamp(end_date)
+
+    # Overlap Logic: Event starts before/on filter end AND ends after/on filter start
+    overlap_mask = (
+        (df["start_date_parsed"] <= filter_end) & 
+        (df["end_date_parsed"] >= filter_start)
+    )
+    
+    filtered = df.loc[overlap_mask]
 
     query = (search_text or "").strip().lower()
     if query:
