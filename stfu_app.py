@@ -357,6 +357,7 @@ def inject_minimal_styles():
                         flex-direction: column;
                         overflow: hidden;
                         height: 100%;
+                        min-height: 0;
                     }
 
                     .stButton > button {
@@ -388,6 +389,7 @@ def inject_minimal_styles():
                     [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
                         border-radius: 0.5rem;
                         width: 100% !important;
+                        height: min(88vh, 1000px) !important;
                     }
         </style>
         """,
