@@ -315,82 +315,134 @@ def inject_minimal_styles():
     st.markdown(
         """
         <style>
-                    .block-container {
-                        padding-top: 3.25rem;
-                        padding-left: 0.75rem;
-                        padding-right: 0.75rem;
-                        max-width: none;
-                    }
+            .block-container {
+                padding-top: 3.25rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+                max-width: none;
+            }
 
-                    html, body, .block-container {
-                        height: 100vh;
-                        overflow: hidden;
-                    }
+            html, body, .block-container {
+                height: 100vh;
+                overflow: hidden;
+            }
 
-                    [data-testid="stHorizontalBlock"] {
-                        display: flex;
-                        align-items: stretch;
-                        height: calc(100vh - 56px);
-                    }
+            [data-testid="stHorizontalBlock"] {
+                display: flex;
+                align-items: stretch;
+                height: calc(100vh - 56px);
+            }
 
-                    [data-testid="stHorizontalBlock"] > div:nth-child(1) {
-                        display: flex;
-                        flex-direction: column;
-                        overflow: hidden;
-                        height: 100%;
-                        padding-right: 0.5rem;
-                    }
+            [data-testid="stHorizontalBlock"] > div:nth-child(1) {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                height: 100%;
+                padding-right: 0.5rem;
+            }
 
-                    [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:first-child {
-                        flex: none;
-                    }
+            [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:first-child {
+                flex: none;
+            }
 
-                    [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
-                        flex: 1 1 auto;
-                        min-height: 0;
-                        overflow: auto;
-                        padding-right: 0.25rem;
-                    }
+            [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow: auto;
+                padding-right: 0.25rem;
+            }
 
-                    [data-testid="stHorizontalBlock"] > div:nth-child(2) {
-                        display: flex;
-                        flex-direction: column;
-                        overflow: hidden;
-                        height: 100%;
-                        min-height: 0;
-                    }
+            [data-testid="stHorizontalBlock"] > div:nth-child(2) {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                height: 100%;
+                min-height: 0;
+            }
 
-                    .stButton > button {
-                        background-color: var(--secondary-background-color);
-                        border-radius: 10px;
-                        padding: 0.5rem 0.75rem;
-                        margin-bottom: 0;
-                        box-shadow: 0 6px 16px rgba(19,24,41,0.04);
-                        border: 1px solid rgba(0,0,0,0.06);
-                        font-family: inherit;
-                        min-height: 88px;
-                        text-align: left;
-                        white-space: pre-line;
-                        line-height: 1.35;
-                        transition: box-shadow 120ms ease, transform 120ms ease;
-                    }
+            .stButton > button {
+                background-color: var(--secondary-background-color);
+                border-radius: 10px;
+                padding: 0.5rem 0.75rem;
+                margin-bottom: 0;
+                box-shadow: 0 6px 16px rgba(19,24,41,0.04);
+                border: 1px solid rgba(0,0,0,0.06);
+                font-family: inherit;
+                min-height: 88px;
+                text-align: left;
+                white-space: pre-line;
+                line-height: 1.35;
+                transition: box-shadow 120ms ease, transform 120ms ease;
+            }
 
-                    .stButton > button:hover {
-                        box-shadow: 0 10px 30px rgba(19,24,41,0.08);
-                        transform: translateY(-2px);
-                        border-color: rgba(0,0,0,0.1);
-                    }
+            .stButton > button:hover {
+                box-shadow: 0 10px 30px rgba(19,24,41,0.08);
+                transform: translateY(-2px);
+                border-color: rgba(0,0,0,0.1);
+            }
 
-                    .stButton > button > div {
-                        width: 100%;
-                        justify-content: flex-start;
-                    }
+            .stButton > button > div {
+                width: 100%;
+                justify-content: flex-start;
+            }
 
-                    [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
-                        border-radius: 0.5rem;
-                        width: 100% !important;
-                        height: min(88vh, 1000px) !important;
-                    }
+            [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
+                border-radius: 0.5rem;
+                width: 100% !important;
+                height: min(88vh, 1000px) !important;
+            }
+
+            @media (max-width: 768px) {
+                .block-container {
+                    padding-top: 1rem;
+                    padding-left: 0.5rem;
+                    padding-right: 0.5rem;
+                }
+
+                html, body, .block-container {
+                    height: auto;
+                    min-height: 100dvh;
+                    overflow-x: hidden;
+                    overflow-y: auto;
+                }
+
+                [data-testid="stHorizontalBlock"] {
+                    display: block;
+                    height: auto;
+                }
+
+                [data-testid="stHorizontalBlock"] > div {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    padding-right: 0 !important;
+                    height: auto !important;
+                    min-height: 0 !important;
+                    overflow: visible !important;
+                }
+
+                [data-testid="stHorizontalBlock"] > div:nth-child(1) {
+                    margin-bottom: 0.75rem;
+                }
+
+                [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
+                    overflow: visible;
+                    padding-right: 0;
+                }
+
+                [data-testid="stHorizontalBlock"] > div:nth-child(2) {
+                    margin-top: 0.5rem;
+                }
+
+                [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
+                    height: 60vh !important;
+                    min-height: 420px !important;
+                    max-height: 75vh !important;
+                }
+
+                .stButton > button {
+                    min-height: 72px;
+                }
+            }
         </style>
         """,
         unsafe_allow_html=True,
