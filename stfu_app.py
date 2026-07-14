@@ -267,7 +267,13 @@ def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
 def render_map(folium_map: folium.Map, height: int | None = None):
     height_to_use = MAP_HEIGHT if height is None else height
     if st_folium is not None:
-        st_folium(folium_map, width=None, height=height_to_use, returned_objects=[])
+        st_folium(
+            folium_map,
+            width=None,
+            height=height_to_use,
+            use_container_width=True,
+            returned_objects=[],
+        )
         return
 
     components.html(folium_map._repr_html_(), height=height_to_use, scrolling=False)
@@ -379,9 +385,8 @@ def inject_minimal_styles():
                         justify-content: flex-start;
                     }
 
-                    iframe {
+                    [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
                         border-radius: 0.5rem;
-                        height: calc(100vh - 0px) !important;
                         width: 100% !important;
                     }
         </style>
