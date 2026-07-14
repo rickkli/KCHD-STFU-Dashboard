@@ -24,6 +24,7 @@ DEFAULT_MAP_CENTER = (42.9634, -85.6681)
 DEFAULT_ZOOM = 11
 SELECTED_ZOOM = 15
 MAP_HEIGHT = 1000
+MOBILE_MAP_HEIGHT = 760
 MARKER_COLOR = "blue"
 MARKER_ICON = "cutlery"
 TRAILING_COUNTRY_PATTERN = re.compile(r",?\s*United States\s*$", re.IGNORECASE)
@@ -415,12 +416,58 @@ def render_results(df: pd.DataFrame):
                 render_card(row)
 
 
-def inject_minimal_styles():
+def render_mobile_view_switcher():
     st.markdown(
         """
         <style>
+            div[data-testid="stRadio"] {
+                display: none;
+            }
+
+            @media (max-width: 1024px) and (max-height: 900px) {
+                div[data-testid="stRadio"] {
+                    display: block;
+                    margin-top: 0.28rem;
+                    margin-bottom: 0.05rem;
+                }
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.radio(
+        "",
+        options=["List View", "Map View"],
+        horizontal=True,
+        label_visibility="visible",
+        key="mobile_view_mode",
+    )
+
+
+def inject_minimal_styles(mobile_view_mode: str):
+    if mobile_view_mode not in {"List View", "Map View"}:
+        mobile_view_mode = "List View"
+
+    mobile_hide_left_column = ""
+    mobile_hide_right_column = ""
+    if mobile_view_mode == "List View":
+        mobile_hide_right_column = """
+            [data-testid="stHorizontalBlock"] > div:nth-child(2) {
+                display: none !important;
+            }
+        """
+    else:
+        mobile_hide_left_column = """
+            [data-testid="stHorizontalBlock"] > div:nth-child(1) {
+                display: none !important;
+            }
+        """
+
+    styles = """
+        <style>
             .block-container {
-                padding-top: 2.75rem;
+                padding-top: 1.0rem;
                 padding-left: 0.75rem;
                 padding-right: 0.75rem;
                 max-width: none;
@@ -496,9 +543,9 @@ def inject_minimal_styles():
                 height: min(88vh, 1000px) !important;
             }
 
-            @media (max-width: 768px) {
+            @media (max-width: 1024px) and (max-height: 900px) {
                 .block-container {
-                    padding-top: 0.35rem;
+                    padding-top: 0.15rem;
                     padding-left: 0.5rem;
                     padding-right: 0.5rem;
                 }
@@ -525,7 +572,7 @@ def inject_minimal_styles():
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(1) {
-                    margin-bottom: 0.75rem;
+                    margin-bottom: 0.05rem;
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
@@ -534,28 +581,42 @@ def inject_minimal_styles():
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(2) {
-                    margin-top: 0.5rem;
+                    margin-top: 0;
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
-                    height: 60vh !important;
-                    min-height: 420px !important;
-                    max-height: 75vh !important;
+                    height: 76vh !important;
+                    min-height: 320px !important;
+                    max-height: 84vh !important;
                 }
 
                 .stButton > button {
                     min-height: 66px;
                 }
+
+                <<LEFT_HIDE>>
+                <<RIGHT_HIDE>>
             }
         </style>
-        """,
+        """
+    styles = styles.replace("<<LEFT_HIDE>>", mobile_hide_left_column).replace("<<RIGHT_HIDE>>", mobile_hide_right_column)
+
+    st.markdown(
+        styles,
         unsafe_allow_html=True,
     )
 
 
 def main():
     st.set_page_config(page_title="STFU Dashboard", layout="wide")
-    inject_minimal_styles()
+
+    if "mobile_view_mode" not in st.session_state:
+        st.session_state["mobile_view_mode"] = "List View"
+
+    render_mobile_view_switcher()
+    mobile_view_mode = st.session_state["mobile_view_mode"]
+
+    inject_minimal_styles(mobile_view_mode)
 
     dataset_path = DEFAULT_DATASET_PATH
     if not dataset_path.exists():
@@ -612,12 +673,13 @@ def main():
             render_results(filtered_df)
 
     with right_col:
+        map_height = MOBILE_MAP_HEIGHT if mobile_view_mode == "Map View" else MAP_HEIGHT
         dashboard_map = build_map(
             filtered_df,
             st.session_state.get("selected_record_id"),
             st.session_state.get("selection_nonce", 0),
         )
-        render_map(dashboard_map)
+        render_map(dashboard_map, height=map_height)
 
 
 if __name__ == "__main__":
