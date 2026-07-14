@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from html import escape
 from pathlib import Path
 
@@ -152,7 +153,7 @@ def build_popup_html(row) -> str:
         schedule_text = escape(row.display_schedule or "Unknown schedule")
         address_text = escape(row.display_address or "Address unavailable")
         return f"""
-        <div style="width: 250px;">
+        <div style="width: 220px;">
             <strong>{name_text}</strong><br/>
             <span style='font-size: 0.92em;'>{schedule_text}</span><br/>
             <span style='font-size: 0.92em;'>{address_text}</span>
@@ -161,12 +162,18 @@ def build_popup_html(row) -> str:
 
 
 def add_cluster_markers(cluster_layer, rows, selected_record_id: str | None, dashboard_map: folium.Map, is_cluster: bool):
+    selected_marker = None
     for row in rows:
         is_selected = row.record_id == selected_record_id
         
         # Only show the popup on load if it's selected AND NOT part of a shared-location cluster
         show_popup = is_selected and not is_cluster
-        popup = folium.Popup(build_popup_html(row), max_width=300, show=show_popup)
+        popup = folium.Popup(
+            build_popup_html(row),
+            max_width=260,
+            show=show_popup,
+            autoPan=False,
+        )
         
         marker = folium.Marker(
             location=[row.latitude, row.longitude],
@@ -175,12 +182,15 @@ def add_cluster_markers(cluster_layer, rows, selected_record_id: str | None, das
             icon=folium.Icon(color=MARKER_COLOR, icon=MARKER_ICON, prefix="fa"),
         )
         
-        # Add directly to the main map if selected so the popup opens reliably, 
-        # BUT only if it isn't part of a cluster stack.
-        if is_selected and not is_cluster:
+        # Keep the selected marker directly on the map so it can always reopen
+        # its popup, even when the same sidebar item is clicked repeatedly.
+        if is_selected:
             marker.add_to(dashboard_map)
+            selected_marker = marker
         else:
             marker.add_to(cluster_layer)
+
+    return selected_marker
 
 
 def add_persistent_cluster_click_behavior(dashboard_map: folium.Map, cluster_layer: MarkerCluster):
@@ -205,7 +215,72 @@ def add_persistent_cluster_click_behavior(dashboard_map: folium.Map, cluster_lay
     dashboard_map.get_root().script.add_child(Element(script))
 
 
-def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
+def add_map_resize_behavior(dashboard_map: folium.Map):
+    map_var = dashboard_map.get_name()
+    script = f"""
+    (function() {{
+        function invalidate() {{
+            var map = window['{map_var}'];
+            if (typeof map !== 'undefined' && map) {{
+                map.invalidateSize(true);
+            }} else {{
+                setTimeout(invalidate, 100);
+            }}
+        }}
+
+        setTimeout(invalidate, 250);
+        window.addEventListener('resize', function() {{
+            setTimeout(invalidate, 50);
+        }});
+    }})();
+    """
+    dashboard_map.get_root().script.add_child(Element(script))
+
+
+def add_selected_marker_focus_behavior(
+    dashboard_map: folium.Map,
+    marker: folium.Marker | None,
+    selected_row,
+    selection_nonce: int | None,
+):
+    if marker is None or selected_row is None:
+        return
+
+    map_var = dashboard_map.get_name()
+    marker_var = marker.get_name()
+    lat = float(selected_row["latitude"])
+    lon = float(selected_row["longitude"])
+    nonce = 0 if selection_nonce is None else int(selection_nonce)
+    script = f"""
+    (function() {{
+        var selectionNonce = {nonce};
+
+        function focusSelectedMarker() {{
+            var map = window['{map_var}'];
+            var marker = window['{marker_var}'];
+            if (typeof map !== 'undefined' && map && typeof marker !== 'undefined' && marker) {{
+                if (marker.getPopup()) {{
+                    marker.closePopup();
+                }}
+                map.invalidateSize(true);
+                map.setView([{lat}, {lon}], {SELECTED_ZOOM}, {{animate: true}});
+                setTimeout(function() {{
+                    if (marker.getPopup()) {{
+                        marker.openPopup();
+                    }}
+                }}, 150);
+            }} else {{
+                setTimeout(focusSelectedMarker, 100);
+            }}
+        }}
+
+        focusSelectedMarker();
+    }})();
+    """
+    dashboard_map.get_root().script.add_child(Element(script))
+
+
+def build_map(df: pd.DataFrame, selected_record_id: str | None, selection_nonce: int | None = None) -> folium.Map:
     geocoded_df = df.dropna(subset=["latitude", "longitude"])
     selected_row = None
 
@@ -246,6 +321,7 @@ def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
 
     grouped_rows = geocoded_df.groupby(["latitude", "longitude"], sort=False)
     has_persistent_clusters = False
+    selected_marker = None
 
     for _, group in grouped_rows:
         rows = list(group.itertuples())
@@ -253,13 +329,22 @@ def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
         
         target_cluster = persistent_cluster if is_cluster else regular_cluster
         
-        # Pass the is_cluster flag to your marker builder
-        add_cluster_markers(target_cluster, rows, selected_record_id, dashboard_map, is_cluster)
+        # Pass the is_cluster flag to your marker builder.
+        maybe_selected_marker = add_cluster_markers(target_cluster, rows, selected_record_id, dashboard_map, is_cluster)
+        if maybe_selected_marker is not None:
+            selected_marker = maybe_selected_marker
         
         has_persistent_clusters = has_persistent_clusters or is_cluster
 
     if has_persistent_clusters:
         add_persistent_cluster_click_behavior(dashboard_map, persistent_cluster)
+
+    if selected_marker is not None and selected_row is not None:
+        # Reopen and recenter on every sidebar click, even when the same
+        # record is clicked repeatedly.
+        add_selected_marker_focus_behavior(dashboard_map, selected_marker, selected_row, selection_nonce)
+
+    add_map_resize_behavior(dashboard_map)
 
     return dashboard_map
 
@@ -267,13 +352,24 @@ def build_map(df: pd.DataFrame, selected_record_id: str | None) -> folium.Map:
 def render_map(folium_map: folium.Map, height: int | None = None):
     height_to_use = MAP_HEIGHT if height is None else height
     if st_folium is not None:
-        st_folium(
-            folium_map,
-            width=None,
-            height=height_to_use,
-            use_container_width=True,
-            returned_objects=[],
-        )
+        map_key = f"stfu-map-{st.session_state.get('selection_nonce', 0)}"
+        try:
+            st_folium(
+                folium_map,
+                width=None,
+                height=height_to_use,
+                use_container_width=True,
+                returned_objects=[],
+                key=map_key,
+            )
+        except TypeError:
+            st_folium(
+                folium_map,
+                width=None,
+                height=height_to_use,
+                use_container_width=True,
+                returned_objects=[],
+            )
         return
 
     components.html(folium_map._repr_html_(), height=height_to_use, scrolling=False)
@@ -286,8 +382,16 @@ def render_card(row):
 
     label = "\n".join([line_1, line_2, line_3])
 
-    if st.button(label, key=f"card-{row.record_id}", use_container_width=True):
+    def select_row():
         st.session_state["selected_record_id"] = row.record_id
+        st.session_state["selection_nonce"] = time.time_ns()
+
+    st.button(
+        label,
+        key=f"card-{row.record_id}",
+        use_container_width=True,
+        on_click=select_row,
+    )
 
     if pd.isna(row.latitude) or pd.isna(row.longitude):
         st.caption("Map coordinate unavailable")
@@ -316,7 +420,7 @@ def inject_minimal_styles():
         """
         <style>
             .block-container {
-                padding-top: 3.25rem;
+                padding-top: 2.75rem;
                 padding-left: 0.75rem;
                 padding-right: 0.75rem;
                 max-width: none;
@@ -394,7 +498,7 @@ def inject_minimal_styles():
 
             @media (max-width: 768px) {
                 .block-container {
-                    padding-top: 1rem;
+                    padding-top: 0.35rem;
                     padding-left: 0.5rem;
                     padding-right: 0.5rem;
                 }
@@ -440,7 +544,7 @@ def inject_minimal_styles():
                 }
 
                 .stButton > button {
-                    min-height: 72px;
+                    min-height: 66px;
                 }
             }
         </style>
@@ -500,6 +604,7 @@ def main():
     valid_selected_id = st.session_state.get("selected_record_id")
     if valid_selected_id and valid_selected_id not in set(filtered_df["record_id"]):
         st.session_state["selected_record_id"] = None
+        st.session_state["selection_nonce"] = 0
 
     with left_col:
         with st.container(border=True):
@@ -507,7 +612,11 @@ def main():
             render_results(filtered_df)
 
     with right_col:
-        dashboard_map = build_map(filtered_df, st.session_state.get("selected_record_id"))
+        dashboard_map = build_map(
+            filtered_df,
+            st.session_state.get("selected_record_id"),
+            st.session_state.get("selection_nonce", 0),
+        )
         render_map(dashboard_map)
 
 
