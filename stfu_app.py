@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import re
 import time
 from html import escape
@@ -20,6 +21,7 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DATASET_PATH = BASE_DIR / "stfu_calendar_prepared.csv"
+LOGO_PATH = BASE_DIR / "KC_HealthDept_Full.png"
 DEFAULT_MAP_CENTER = (42.9634, -85.6681)
 DEFAULT_ZOOM = 11
 SELECTED_ZOOM = 15
@@ -404,7 +406,7 @@ def render_results(df: pd.DataFrame):
         return
 
     try:
-        results_container = st.container(height=650, border=False)
+        results_container = st.container(height=500, border=False)
     except TypeError:
         results_container = st.container()
 
@@ -427,8 +429,8 @@ def render_mobile_view_switcher():
             @media (max-width: 1024px) and (max-height: 900px) {
                 div[data-testid="stRadio"] {
                     display: block;
-                    margin-top: 0.28rem;
-                    margin-bottom: 0.05rem;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0rem;
                 }
             }
         </style>
@@ -437,11 +439,23 @@ def render_mobile_view_switcher():
     )
 
     st.radio(
-        "",
+        "Mobile view",
         options=["List View", "Map View"],
         horizontal=True,
-        label_visibility="visible",
+        label_visibility="hidden",
         key="mobile_view_mode",
+    )
+
+
+def render_logo_block():
+    logo_data = base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
+    st.markdown(
+        f"""
+        <div class="logo-panel">
+            <img src="data:image/png;base64,{logo_data}" alt="Kent County Health Department logo" />
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -466,34 +480,73 @@ def inject_minimal_styles(mobile_view_mode: str):
 
     styles = """
         <style>
-            .block-container {
-                padding-top: 1.0rem;
-                padding-left: 0.75rem;
-                padding-right: 0.75rem;
-                max-width: none;
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+            
+            :root {
+                --kchd-ink: #252A36;
+                --kchd-blue: #6CACE4;
+                --kchd-blue-deep: #1D4289;
+                --kchd-blue-soft: #D9E1E2;
+                --kchd-blue-faint: #EEF4FB;
+                --kchd-surface: #ffffff;
+                --kchd-page-bg: #ffffff;
+                --kchd-border: rgba(29, 66, 137, 0.14);
+                --kchd-shadow: 0 20px 48px rgba(15, 23, 34, 0.08);
             }
 
-            html, body, .block-container {
-                height: 100vh;
-                overflow: hidden;
+            html, body, .stApp {
+                background: var(--kchd-page-bg);
+                color: var(--kchd-ink);
+                min-height: 100vh;
+                font-family: 'Montserrat', 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            }
+
+            .block-container {
+                padding-top: 0.85rem;
+                padding-left: 0.9rem;
+                padding-right: 0.9rem;
+                max-width: none;
             }
 
             [data-testid="stHorizontalBlock"] {
                 display: flex;
                 align-items: stretch;
                 height: calc(100vh - 56px);
+                gap: 1rem;
+            }
+
+            [data-testid="stHorizontalBlock"] > div:nth-child(1),
+            [data-testid="stHorizontalBlock"] > div:nth-child(2) {
+                background: var(--kchd-surface);
+                border-radius: 20px;
+                box-shadow: var(--kchd-shadow);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                border: 1px solid rgba(29, 66, 137, 0.08);
             }
 
             [data-testid="stHorizontalBlock"] > div:nth-child(1) {
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-                height: 100%;
-                padding-right: 0.5rem;
+                padding: 0.95rem;
             }
 
-            [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:first-child {
-                flex: none;
+            .logo-panel {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.35rem 0 0.6rem 0;
+                margin: 0.55rem 0 0.9rem 0;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+
+            .logo-panel img {
+                width: 100%;
+                max-width: 360px;
+                height: auto;
+                display: block;
             }
 
             [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
@@ -504,43 +557,182 @@ def inject_minimal_styles(mobile_view_mode: str):
             }
 
             [data-testid="stHorizontalBlock"] > div:nth-child(2) {
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
                 height: 100%;
                 min-height: 0;
             }
 
             .stButton > button {
-                background-color: var(--secondary-background-color);
-                border-radius: 10px;
-                padding: 0.5rem 0.75rem;
-                margin-bottom: 0;
-                box-shadow: 0 6px 16px rgba(19,24,41,0.04);
-                border: 1px solid rgba(0,0,0,0.06);
-                font-family: inherit;
+                background-color: var(--kchd-surface) !important;
+                background-image: none !important;
+                color: var(--kchd-ink);
+                border-radius: 14px;
+                padding: 0.75rem 0.9rem;
+                margin-bottom: 0.75rem;
+                box-shadow: none;
+                border: 1px solid rgba(29, 66, 137, 0.14);
+                border-left: 6px solid var(--kchd-blue);
+                font-family: "Montserrat", sans-serif;
+                font-size: 0.95rem !important;
                 min-height: 88px;
                 text-align: left;
                 white-space: pre-line;
-                line-height: 1.35;
-                transition: box-shadow 120ms ease, transform 120ms ease;
+                line-height: 1.45;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
             }
 
             .stButton > button:hover {
-                box-shadow: 0 10px 30px rgba(19,24,41,0.08);
-                transform: translateY(-2px);
-                border-color: rgba(0,0,0,0.1);
+                background-color: rgba(238, 244, 251, 0.92) !important;
+                background-image: none !important;
+                box-shadow: none;
+                transform: translateY(-1px);
+                border-color: rgba(29, 66, 137, 0.24);
+                color: var(--kchd-ink) !important;
             }
 
-            .stButton > button > div {
+            .stButton > button:hover,
+            .stButton > button:hover > div,
+            .stButton > button:hover > div > div,
+            .stButton > button:hover > div > div > div,
+            .stButton > button:hover span,
+            .stButton > button:hover strong {
+                color: var(--kchd-ink) !important;
+                -webkit-text-fill-color: var(--kchd-ink) !important;
+            }
+
+            .stButton > button[aria-pressed="true"],
+            .stButton > button[aria-pressed="true"] *,
+            .stButton > button:focus,
+            .stButton > button:focus-visible {
+                background-color: var(--kchd-surface) !important;
+                background-image: none !important;
+                border-color: rgba(29, 66, 137, 0.14) !important;
+                color: var(--kchd-ink) !important;
+                -webkit-text-fill-color: var(--kchd-ink) !important;
+            }
+
+            .stButton > button > div,
+            .stButton > button > div > div,
+            .stButton > button > div > div > div {
                 width: 100%;
+                display: flex;
+                align-items: center;
                 justify-content: flex-start;
+                font-size: 0.95rem !important;
+            }
+
+            /* Preserve appearance for explicitly selected/focused buttons */
+            .stButton > button[aria-pressed="true"],
+            .stButton > button[data-active="true"],
+            .stButton > button:focus,
+            .stButton > button:focus-visible,
+            .stButton > button:active,
+            .stButton > button.selected {
+                background-image: none !important;
+                background-color: var(--kchd-surface) !important;
+                color: var(--kchd-ink) !important;
+                box-shadow: none !important;
+                border-color: rgba(29, 66, 137, 0.14) !important;
+                transform: none !important;
+            }
+
+            /* Ensure hover only affects the hovered button */
+            .stButton > button:hover {
+                background-color: var(--kchd-surface) !important;
+                background-image: none !important;
+                box-shadow: none;
+                transform: translateY(-1px);
+                border-color: rgba(29, 66, 137, 0.24);
             }
 
             [data-testid="stHorizontalBlock"] > div:nth-child(2) iframe {
-                border-radius: 0.5rem;
+                border-radius: 1rem;
                 width: 100% !important;
                 height: min(88vh, 1000px) !important;
+                border: 1px solid rgba(29, 66, 137, 0.14);
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
+            }
+
+            [data-testid="stMarkdown"] h1, [data-testid="stMarkdown"] h2, [data-testid="stMarkdown"] h3 {
+                color: var(--kchd-ink);
+            }
+
+            [data-testid="stTextInput"] label,
+            [data-testid="stDateInput"] label {
+                color: var(--kchd-ink);
+                font-weight: 600;
+            }
+
+            [data-baseweb="input"],
+            [data-baseweb="select"] {
+                border-radius: 14px !important;
+            }
+
+            [data-testid="stTextInput"] input,
+            [data-testid="stDateInput"] input {
+                background: rgba(255,255,255,0.95);
+                border-color: rgba(29, 66, 137, 0.18);
+            }
+
+                [data-testid="stTextInput"] {
+                background: transparent !important;
+            }
+
+            [data-testid="stTextInput"] > div,
+            [data-testid="stTextInput"] > div > div,
+            [data-testid="stTextInput"] > div > div > div {
+                width: 100% !important;
+                box-sizing: border-box;
+                background: rgba(255,255,255,0.98) !important;
+                border-color: rgba(29, 66, 137, 0.18) !important;
+                border-radius: 14px !important;
+                overflow: hidden !important;
+            }
+
+            [data-testid="stTextInput"] input {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+                        [data-testid="stDateInput"] {
+                background: transparent !important;
+            }
+
+            [data-testid="stDateInput"] > div,
+            [data-testid="stDateInput"] > div > div,
+            [data-testid="stDateInput"] > div > div > div {
+                width: 100% !important;
+                box-sizing: border-box;
+                background: rgba(255,255,255,0.98) !important;
+                border-color: rgba(29, 66, 137, 0.18) !important;
+                border-radius: 14px !important;
+                overflow: hidden !important;
+            }
+
+            [data-testid="stDateInput"] button {
+                background: rgba(255,255,255,0.98) !important;
+            }
+
+            [data-testid="stDateInput"] input {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            [data-testid="stRadio"] {
+                background: rgba(255,255,255,0.75);
+                border: 1px solid rgba(29, 66, 137, 0.12);
+                border-radius: 999px;
+                padding: 0.1rem 0.35rem 0.15rem 0.35rem;
+                box-shadow: 0 8px 18px rgba(15, 23, 34, 0.05);
+            }
+
+            [data-testid="stRadio"] label {
+                margin-bottom: 0;
+                color: var(--kchd-blue);
             }
 
             @media (max-width: 1024px) and (max-height: 900px) {
@@ -578,6 +770,15 @@ def inject_minimal_styles(mobile_view_mode: str):
                 [data-testid="stHorizontalBlock"] > div:nth-child(1) > div:last-child {
                     overflow: visible;
                     padding-right: 0;
+                }
+
+                [data-testid="stRadio"] {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                    padding: 0 !important;
+                    margin: 1.5rem 0 0.0rem 0;
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(2) {
@@ -648,6 +849,8 @@ def main():
     left_col, right_col = st.columns([1, 3], gap="medium")
 
     with left_col:
+        render_logo_block()
+
         with st.container(border=True):
             st.subheader("Filters")
             date_range = st.date_input(
