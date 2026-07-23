@@ -723,7 +723,7 @@ def inject_minimal_styles(mobile_view_mode: str):
             [data-testid="stTextInput"] small {
                 position: absolute !important;
                 right: 1rem !important;
-                top: 50% !important;
+                top: 62% !important;
                 transform: translateY(-50%) !important;
                 margin: 0 !important;
                 padding: 0 !important;
