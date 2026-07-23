@@ -1,6 +1,7 @@
 pandas
 geopy
 icalendar
+python-dateutil
 requests
 streamlit
 folium

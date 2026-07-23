@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime, time
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta
 import re
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -19,6 +20,7 @@ DEFAULT_ICS_URL = (
 DEFAULT_OUTPUT_PATH = BASE_DIR / "stfu_calendar_prepared.csv"
 DEFAULT_CACHE_PATH = BASE_DIR / "geocode_cache.csv"
 DEFAULT_TIMEZONE = ZoneInfo("America/Detroit")
+DEFAULT_RECURRENCE_LOOKAHEAD_DAYS = 365
 REQUEST_TIMEOUT_SECONDS = 30
 AREA_PREFIX_PATTERN = re.compile(r"^\s*Ar(?:ea|e)?\s*\d*\s*[:\-]\s*", re.IGNORECASE)
 PAREN_ADDRESS_PATTERN = re.compile(r"^(?P<name>.*?)\((?P<address>[^()]*)\)\s*$")
@@ -333,6 +335,41 @@ def normalize_calendar_datetime(value) -> datetime | None:
     return pd.to_datetime(value, errors="coerce").to_pydatetime()
 
 
+def normalize_for_recurrence(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+
+    if value.tzinfo is None:
+        return value.replace(tzinfo=DEFAULT_TIMEZONE)
+
+    return value.astimezone(DEFAULT_TIMEZONE)
+
+
+def event_rrule_text(event) -> str | None:
+    rrule = event.get("RRULE")
+    if rrule is None:
+        return None
+
+    text = clean_text(rrule.to_ical().decode() if hasattr(rrule, "to_ical") else str(rrule))
+    return text
+
+
+def build_calendar_row(
+    event,
+    starts_at: datetime | None,
+    ends_at: datetime | None,
+    all_day: bool,
+) -> dict[str, object]:
+    return {
+        "Subject": calendar_property_text(event, "SUMMARY"),
+        "Start Date": format_calendar_date(starts_at),
+        "Start Time": format_calendar_time(starts_at, all_day=all_day),
+        "End Date": format_calendar_date(ends_at),
+        "End Time": format_calendar_time(ends_at, all_day=all_day),
+        "Location": calendar_property_text(event, "LOCATION"),
+    }
+
+
 def format_calendar_date(value: datetime | None) -> str | None:
     if value is None:
         return None
@@ -369,6 +406,14 @@ def calendar_property_text(event, property_name: str) -> str | None:
     return clean_text(value)
 
 
+def to_display_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(DEFAULT_TIMEZONE).replace(tzinfo=None)
+
+
 def load_ics_calendar(ics_url: str) -> pd.DataFrame:
     try:
         from icalendar import Calendar
@@ -376,12 +421,35 @@ def load_ics_calendar(ics_url: str) -> pd.DataFrame:
         raise ImportError(
             "icalendar is required for remote Outlook calendar parsing. Install requirements.txt first."
         ) from exc
+    try:
+        from dateutil.rrule import rrulestr
+    except ImportError as exc:
+        raise ImportError(
+            "python-dateutil is required for recurring Outlook calendar parsing. Install requirements.txt first."
+        ) from exc
 
     calendar = Calendar.from_ical(fetch_ics_calendar(ics_url))
+    events = list(calendar.walk("VEVENT"))
     rows = []
-    for event in calendar.walk("VEVENT"):
+    recurring_events = []
+    override_starts_by_uid: dict[str, set[datetime]] = defaultdict(set)
+    latest_datetime: datetime | None = None
+
+    def track_latest(value: datetime | None) -> None:
+        nonlocal latest_datetime
+        if value is None:
+            return
+        if latest_datetime is None or value > latest_datetime:
+            latest_datetime = value
+
+    for event in events:
         status = clean_text(event.get("STATUS"))
         if status and status.upper() == "CANCELLED":
+            recurrence_id_raw = event.decoded("RECURRENCE-ID", None)
+            recurrence_id = normalize_calendar_datetime(recurrence_id_raw)
+            uid = clean_text(event.get("UID"))
+            if uid and recurrence_id is not None:
+                override_starts_by_uid[uid].add(normalize_for_recurrence(recurrence_id))
             continue
 
         starts_at_raw = event.decoded("DTSTART", None)
@@ -389,17 +457,73 @@ def load_ics_calendar(ics_url: str) -> pd.DataFrame:
         starts_at = normalize_calendar_datetime(starts_at_raw)
         ends_at = normalize_calendar_datetime(ends_at_raw)
         all_day = isinstance(starts_at_raw, date) and not isinstance(starts_at_raw, datetime)
+        recurrence_id_raw = event.decoded("RECURRENCE-ID", None)
+        recurrence_id = normalize_calendar_datetime(recurrence_id_raw)
+        uid = clean_text(event.get("UID"))
+        rrule_text = event_rrule_text(event)
 
-        rows.append(
-            {
-                "Subject": calendar_property_text(event, "SUMMARY"),
-                "Start Date": format_calendar_date(starts_at),
-                "Start Time": format_calendar_time(starts_at, all_day=all_day),
-                "End Date": format_calendar_date(ends_at),
-                "End Time": format_calendar_time(ends_at, all_day=all_day),
-                "Location": calendar_property_text(event, "LOCATION"),
-            }
-        )
+        track_latest(starts_at)
+        track_latest(ends_at)
+
+        if recurrence_id is not None:
+            if uid:
+                override_starts_by_uid[uid].add(normalize_for_recurrence(recurrence_id))
+            rows.append(build_calendar_row(event, starts_at, ends_at, all_day))
+            continue
+
+        if rrule_text:
+            recurring_events.append(
+                {
+                    "event": event,
+                    "starts_at": starts_at,
+                    "ends_at": ends_at,
+                    "all_day": all_day,
+                    "rrule_text": rrule_text,
+                    "uid": uid,
+                }
+            )
+            continue
+
+        rows.append(build_calendar_row(event, starts_at, ends_at, all_day))
+
+    recurrence_window_end = (latest_datetime or datetime.now(DEFAULT_TIMEZONE).replace(tzinfo=None)) + timedelta(
+        days=DEFAULT_RECURRENCE_LOOKAHEAD_DAYS
+    )
+    recurrence_window_end_aware = normalize_for_recurrence(recurrence_window_end)
+
+    for recurring_event in recurring_events:
+        event = recurring_event["event"]
+        starts_at = recurring_event["starts_at"]
+        ends_at = recurring_event["ends_at"]
+        all_day = recurring_event["all_day"]
+        rrule_text = recurring_event["rrule_text"]
+        uid = recurring_event["uid"]
+
+        if starts_at is None:
+            continue
+
+        duration = ends_at - starts_at if ends_at is not None else None
+        recurrence_dtstart = normalize_for_recurrence(starts_at)
+        recurrence_rule = rrulestr(rrule_text, dtstart=recurrence_dtstart)
+        skipped_occurrences = override_starts_by_uid.get(uid, set()) if uid else set()
+
+        for occurrence_start in recurrence_rule.between(recurrence_dtstart, recurrence_window_end_aware, inc=True):
+            occurrence_start_display = to_display_datetime(occurrence_start)
+            if occurrence_start_display is not None and (
+                occurrence_start in skipped_occurrences or occurrence_start_display in skipped_occurrences
+            ):
+                continue
+
+            if duration is not None:
+                occurrence_end = occurrence_start + duration
+            elif ends_at is not None:
+                occurrence_end = ends_at
+            else:
+                occurrence_end = None
+
+            occurrence_end = to_display_datetime(occurrence_end)
+
+            rows.append(build_calendar_row(event, occurrence_start_display, occurrence_end, all_day))
 
     return pd.DataFrame(rows, columns=["Subject", "Start Date", "Start Time", "End Date", "End Time", "Location"])
 
