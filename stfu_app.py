@@ -721,9 +721,13 @@ def inject_minimal_styles(mobile_view_mode: str):
             }
 
             [data-testid="stTextInput"] small {
+                display: none !important;
+            }
+
+            [data-testid="stTextInput"] [data-testid="InputInstructions"] {
                 position: absolute !important;
                 right: 1rem !important;
-                top: 62% !important;
+                top: 70% !important;
                 transform: translateY(-50%) !important;
                 margin: 0 !important;
                 padding: 0 !important;
@@ -732,6 +736,11 @@ def inject_minimal_styles(mobile_view_mode: str):
                 white-space: nowrap !important;
                 color: rgba(117, 124, 138, 0.95) !important;
                 background: transparent !important;
+            }
+
+            [data-testid="stTextInput"] [data-testid="InputInstructions"] > span {
+                font-size: 0.75rem !important;
+                line-height: 1.2 !important;
             }
 
                         [data-testid="stDateInput"] {
