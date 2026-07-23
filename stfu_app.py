@@ -125,6 +125,13 @@ def get_default_date_bounds(df: pd.DataFrame):
     return min_date, max_date
 
 
+def get_current_week_bounds(reference_date=None):
+    today = pd.Timestamp(reference_date or pd.Timestamp.today()).normalize()
+    week_start = today - pd.Timedelta(days=today.dayofweek)
+    week_end = week_start + pd.Timedelta(days=6)
+    return week_start.date(), week_end.date()
+
+
 def normalize_date_range(date_range, min_date, max_date):
     if isinstance(date_range, tuple) and len(date_range) == 2:
         return date_range
@@ -412,7 +419,7 @@ def render_results(df: pd.DataFrame):
 
     with results_container:
         count = len(df)
-        st.markdown(f"**Showing {count} matching STFU unit{'s' if count != 1 else ''}**")
+        st.markdown(f"**Showing {count} matching unit{'s' if count != 1 else ''}**")
         for row in df.itertuples():
             with st.container(border=True):
                 render_card(row)
@@ -882,15 +889,13 @@ def main():
     # 1. Get the true absolute boundaries of your data
     min_date, max_date = get_default_date_bounds(df)
 
-    # 2. Dynamically calculate the first day of the current month
-    first_of_month = pd.Timestamp.today().replace(day=1).date()
+    # 2. Dynamically calculate the current week for the viewer.
+    current_week_start, current_week_end = get_current_week_bounds()
 
-    # 3. Safety check: Ensure default_start falls strictly between min_date and max_date
-    # to satisfy Streamlit's widget validation constraints.
-    if min_date <= first_of_month <= max_date:
-        default_start = first_of_month
-    else:
-        default_start = min_date
+    # 3. Safety check: Clamp the default week to the available dataset bounds so
+    # the Streamlit widget always receives a valid initial range.
+    default_start = max(min_date, current_week_start)
+    default_end = min(max_date, current_week_end)
 
     left_col, right_col = st.columns([1, 3], gap="medium")
 
@@ -900,9 +905,9 @@ def main():
         with st.container(border=True):
             st.subheader("Filters")
             date_range = st.date_input(
-                "Date range",
-                value=(default_start, max_date),  # Defaults to first of current month
-                min_value=default_start,          # Lower limit is the same as default start to ensure it's valid
+                "Date Range",
+                value=(default_start, default_end),  # Defaults to the viewer's current week
+                min_value=min_date,                  # Allow navigation across the full dataset span
                 max_value=max_date,               # Upper limit reflects true latest event end date
                 format="MM/DD/YYYY",
             )
