@@ -688,13 +688,50 @@ def inject_minimal_styles(mobile_view_mode: str):
                 background: rgba(255,255,255,0.98) !important;
                 border-color: rgba(29, 66, 137, 0.18) !important;
                 border-radius: 14px !important;
-                overflow: hidden !important;
+                overflow: visible !important;
+                position: relative;
             }
 
             [data-testid="stTextInput"] input {
                 background: transparent !important;
                 border: none !important;
                 box-shadow: none !important;
+                padding-left: 0.95rem !important;
+                padding-right: 0.95rem !important;
+                line-height: 1.3 !important;
+                position: relative !important;
+                z-index: 2 !important;
+                -webkit-appearance: none !important;
+                appearance: none !important;
+            }
+
+            [data-testid="stTextInput"] [data-baseweb="input"] {
+                position: relative;
+                z-index: 1;
+                overflow: visible !important;
+            }
+
+            [data-testid="stTextInput"] input[type="search"]::-webkit-search-cancel-button,
+            [data-testid="stTextInput"] input[type="search"]::-webkit-search-decoration,
+            [data-testid="stTextInput"] input[type="search"]::-webkit-search-results-button,
+            [data-testid="stTextInput"] input[type="search"]::-webkit-search-results-decoration {
+                -webkit-appearance: none;
+                appearance: none;
+                display: none;
+            }
+
+            [data-testid="stTextInput"] small {
+                position: absolute !important;
+                right: 1rem !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                z-index: 3 !important;
+                pointer-events: none !important;
+                white-space: nowrap !important;
+                color: rgba(117, 124, 138, 0.95) !important;
+                background: transparent !important;
             }
 
                         [data-testid="stDateInput"] {
