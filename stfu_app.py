@@ -442,6 +442,9 @@ def render_mobile_view_switcher():
                     display: block;
                     margin-top: 1.5rem;
                     margin-bottom: 0rem;
+                    position: sticky;
+                    top: 0.75rem;
+                    z-index: 1000;
                 }
             }
         </style>
@@ -783,13 +786,42 @@ def inject_minimal_styles(mobile_view_mode: str):
                 background: rgba(255,255,255,0.75);
                 border: 1px solid rgba(29, 66, 137, 0.12);
                 border-radius: 999px;
-                padding: 0.1rem 0.35rem 0.15rem 0.35rem;
+                padding: 0.35rem 0.45rem;
                 box-shadow: 0 8px 18px rgba(15, 23, 34, 0.05);
+            }
+
+            [data-testid="stRadio"] [role="radiogroup"] {
+                display: flex;
+                align-items: stretch;
+                gap: 0.45rem;
+                flex-wrap: wrap;
+            }
+
+            [data-testid="stRadio"] [role="radiogroup"] > label {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 0.5rem;
+                margin: 0 !important;
+                padding: 0.55rem 1.05rem !important;
+                min-height: 3.1rem;
+                border-radius: 999px;
+                box-sizing: border-box;
+                line-height: 1;
             }
 
             [data-testid="stRadio"] label {
                 margin-bottom: 0;
                 color: var(--kchd-blue);
+            }
+
+            [data-testid="stRadio"] label,
+            [data-testid="stRadio"] label p,
+            [data-testid="stRadio"] label span {
+                font-size: 1.45rem !important;
+                font-weight: 1000 !important;
+                line-height: 1 !important;
+                margin: 0 !important;
             }
 
             @media (max-width: 1024px) and (max-height: 900px) {
@@ -836,6 +868,35 @@ def inject_minimal_styles(mobile_view_mode: str):
                     border-radius: 0 !important;
                     padding: 0 !important;
                     margin: 1.5rem 0 0.0rem 0;
+                }
+
+                [data-testid="stRadio"] label,
+                [data-testid="stRadio"] label p,
+                [data-testid="stRadio"] label span {
+                    font-size: 1.45rem !important;
+                    font-weight: 1000 !important;
+                    line-height: 1 !important;
+                    margin: 0 !important;
+                }
+
+                [data-testid="stRadio"] [role="radiogroup"] {
+                    display: flex;
+                    align-items: stretch;
+                    gap: 0.45rem;
+                    flex-wrap: wrap;
+                }
+
+                [data-testid="stRadio"] [role="radiogroup"] > label {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    gap: 0.5rem;
+                    margin: 0 !important;
+                    padding: 0.55rem 1.05rem !important;
+                    min-height: 3.1rem;
+                    border-radius: 999px;
+                    box-sizing: border-box;
+                    line-height: 1;
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(2) {
