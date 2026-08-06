@@ -675,21 +675,6 @@ def inject_minimal_styles(mobile_view_mode: str):
                 box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
             }
 
-            [data-testid="stEmbedFloatingActionButton"] button,
-            [data-testid="stEmbedFloatingActionButton"] button span,
-            [data-testid="stEmbedFloatingActionButton"] button p,
-            .stActionButton button,
-            .stActionButton button span,
-            .stActionButton button p {
-                font-size: 2.25rem !important;
-                font-weight: 1000 !important;
-                line-height: 1.1 !important;
-            }
-
-            [data-testid="stEmbedFloatingActionButton"] {
-                font-size: 1.1rem !important;
-            }
-
             [data-testid="stMarkdown"] h1, [data-testid="stMarkdown"] h2, [data-testid="stMarkdown"] h3 {
                 color: var(--kchd-ink);
             }
