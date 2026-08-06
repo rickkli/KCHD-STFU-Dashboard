@@ -134,7 +134,11 @@ def get_current_week_bounds(reference_date=None):
 
 def normalize_date_range(date_range, min_date, max_date):
     if isinstance(date_range, tuple) and len(date_range) == 2:
-        return date_range
+        start_date = max(min_date, date_range[0])
+        end_date = min(max_date, date_range[1])
+        if start_date > end_date:
+            return (min_date, min_date)
+        return (start_date, end_date)
     return (min_date, max_date)
 
 
@@ -886,14 +890,14 @@ def main():
         st.error(f"Failed to load prepared calendar dataset: {exc}")
         st.stop()
 
-    # 1. Get the true absolute boundaries of your data
+    # 1. Get the true absolute boundaries of your data.
     min_date, max_date = get_default_date_bounds(df)
 
     # 2. Dynamically calculate the current week for the viewer.
     current_week_start, current_week_end = get_current_week_bounds()
 
-    # 3. Safety check: Clamp the default week to the available dataset bounds so
-    # the Streamlit widget always receives a valid initial range.
+    # 3. Clamp the default week to the available dataset bounds so the widget
+    # always opens on the current week when possible.
     default_start = max(min_date, current_week_start)
     default_end = min(max_date, current_week_end)
 
@@ -906,9 +910,9 @@ def main():
             st.subheader("Filters")
             date_range = st.date_input(
                 "Date Range",
-                value=(default_start, default_end),  # Defaults to the viewer's current week
-                min_value=min_date,                  # Allow navigation across the full dataset span
-                max_value=max_date,               # Upper limit reflects true latest event end date
+                value=(default_start, default_end),
+                min_value=current_week_start,
+                max_value=max_date,
                 format="MM/DD/YYYY",
             )
             search_text = st.text_input("Search", placeholder="Search by business name")
