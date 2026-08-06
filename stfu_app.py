@@ -681,8 +681,8 @@ def inject_minimal_styles(mobile_view_mode: str):
             .stActionButton button,
             .stActionButton button span,
             .stActionButton button p {
-                font-size: 1.15rem !important;
-                font-weight: 700 !important;
+                font-size: 2.25rem !important;
+                font-weight: 1000 !important;
                 line-height: 1.1 !important;
             }
 
