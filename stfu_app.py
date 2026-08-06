@@ -440,11 +440,17 @@ def render_mobile_view_switcher():
             @media (max-width: 1024px) and (max-height: 900px) {
                 div[data-testid="stRadio"] {
                     display: block;
-                    margin-top: 1.5rem;
-                    margin-bottom: 0rem;
-                    position: sticky;
-                    top: 0.75rem;
+                    position: fixed;
+                    right: 1rem;
+                    bottom: 1rem;
                     z-index: 1000;
+                    background: #ffffff;
+                    border: none;
+                    border-radius: 1.25rem;
+                    box-shadow: none;
+                    padding: 0.05rem;
+                    width: fit-content;
+                    max-width: calc(100vw - 2rem);
                 }
             }
         </style>
@@ -783,31 +789,59 @@ def inject_minimal_styles(mobile_view_mode: str):
             }
 
             [data-testid="stRadio"] {
-                background: rgba(255,255,255,0.75);
-                border: 1px solid rgba(29, 66, 137, 0.12);
+                background: #ffffff;
+                border: none;
                 border-radius: 999px;
-                padding: 0.35rem 0.45rem;
-                box-shadow: 0 8px 18px rgba(15, 23, 34, 0.05);
+                padding: 0 !important;
+                box-shadow: none;
+            }
+
+            [data-testid="stRadio"] > div {
+                margin-top: 0 !important;
+                padding: 0 !important;
+            }
+
+            [data-testid="stRadio"] > div > div {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+
+            [data-testid="stRadio"] > div > div > div {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
             }
 
             [data-testid="stRadio"] [role="radiogroup"] {
                 display: flex;
                 align-items: stretch;
-                gap: 0.45rem;
-                flex-wrap: wrap;
+                gap: 0;
+                flex-direction: column;
+                flex-wrap: nowrap;
+                width: 100%;
+                margin-top: 0 !important;
+                padding: 0 !important;
+                transform: translateY(-0.35rem);
             }
 
             [data-testid="stRadio"] [role="radiogroup"] > label {
                 display: flex !important;
                 align-items: center !important;
-                justify-content: center !important;
-                gap: 0.5rem;
+                justify-content: flex-start !important;
+                gap: 0.25rem;
                 margin: 0 !important;
-                padding: 0.55rem 1.05rem !important;
-                min-height: 3.1rem;
+                padding: 0.16rem 0.55rem !important;
+                min-height: 2rem;
                 border-radius: 999px;
                 box-sizing: border-box;
                 line-height: 1;
+                width: 100%;
+                text-align: left;
+                overflow: hidden;
+            }
+
+            [data-testid="stRadio"] [role="radiogroup"] > label:first-child {
+                margin-top: -0.8rem !important;
+                padding-top: 0 !important;
             }
 
             [data-testid="stRadio"] label {
@@ -818,8 +852,8 @@ def inject_minimal_styles(mobile_view_mode: str):
             [data-testid="stRadio"] label,
             [data-testid="stRadio"] label p,
             [data-testid="stRadio"] label span {
-                font-size: 1.45rem !important;
-                font-weight: 1000 !important;
+                font-size: 1.25rem !important;
+                font-weight: 800 !important;
                 line-height: 1 !important;
                 margin: 0 !important;
             }
@@ -862,19 +896,34 @@ def inject_minimal_styles(mobile_view_mode: str):
                 }
 
                 [data-testid="stRadio"] {
-                    background: transparent !important;
+                    background: #ffffff !important;
                     border: none !important;
                     box-shadow: none !important;
-                    border-radius: 0 !important;
+                    border-radius: 1.25rem !important;
                     padding: 0 !important;
-                    margin: 1.5rem 0 0.0rem 0;
+                    margin: 0 !important;
+                }
+
+                [data-testid="stRadio"] > div {
+                    margin-top: 0 !important;
+                    padding: 0 !important;
+                }
+
+                [data-testid="stRadio"] > div > div {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
+                }
+
+                [data-testid="stRadio"] > div > div > div {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
                 }
 
                 [data-testid="stRadio"] label,
                 [data-testid="stRadio"] label p,
                 [data-testid="stRadio"] label span {
-                    font-size: 1.45rem !important;
-                    font-weight: 1000 !important;
+                    font-size: 1.32rem !important;
+                    font-weight: 900 !important;
                     line-height: 1 !important;
                     margin: 0 !important;
                 }
@@ -882,21 +931,43 @@ def inject_minimal_styles(mobile_view_mode: str):
                 [data-testid="stRadio"] [role="radiogroup"] {
                     display: flex;
                     align-items: stretch;
-                    gap: 0.45rem;
-                    flex-wrap: wrap;
+                    gap: 0;
+                    flex-direction: column;
+                    flex-wrap: nowrap;
+                    width: 100%;
+                    margin-top: 0 !important;
+                    padding: 0 !important;
+                    transform: translateY(-0.35rem);
                 }
 
                 [data-testid="stRadio"] [role="radiogroup"] > label {
                     display: flex !important;
                     align-items: center !important;
-                    justify-content: center !important;
-                    gap: 0.5rem;
+                    justify-content: flex-start !important;
+                    gap: 0.25rem;
                     margin: 0 !important;
-                    padding: 0.55rem 1.05rem !important;
-                    min-height: 3.1rem;
+                    padding: 0.16rem 0.55rem !important;
+                    min-height: 2rem;
                     border-radius: 999px;
                     box-sizing: border-box;
                     line-height: 1;
+                    width: 100%;
+                    text-align: left;
+                    overflow: hidden;
+                }
+
+                [data-testid="stRadio"] [role="radiogroup"] > label:first-child {
+                    margin-top: -0.8rem !important;
+                    padding-top: 0 !important;
+                }
+
+                [data-testid="stRadio"] [role="radiogroup"] > label:first-child {
+                    margin-top: 0 !important;
+                    padding-top: 0.1rem !important;
+                }
+
+                [data-testid="stRadio"] [role="radiogroup"] > label:first-child {
+                    margin-top: 0 !important;
                 }
 
                 [data-testid="stHorizontalBlock"] > div:nth-child(2) {
