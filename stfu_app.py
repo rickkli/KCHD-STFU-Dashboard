@@ -441,7 +441,7 @@ def render_mobile_view_switcher():
                 div[data-testid="stRadio"] {
                     display: block;
                     position: fixed;
-                    right: 1rem;
+                    left: 50%;
                     bottom: 1rem;
                     z-index: 1000;
                     background: #ffffff;
@@ -451,6 +451,7 @@ def render_mobile_view_switcher():
                     padding: 0.05rem;
                     width: fit-content;
                     max-width: calc(100vw - 2rem);
+                    transform: translateX(-50%);
                 }
             }
         </style>
