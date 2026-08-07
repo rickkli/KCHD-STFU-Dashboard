@@ -22,6 +22,7 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DATASET_PATH = BASE_DIR / "stfu_calendar_prepared.csv"
 LOGO_PATH = BASE_DIR / "KC_HealthDept_Full.png"
+FRAME_ICON_PATH = BASE_DIR / "KC_HealthDept_Frame.png"
 DEFAULT_MAP_CENTER = (42.9634, -85.6681)
 DEFAULT_ZOOM = 11
 SELECTED_ZOOM = 15
@@ -999,7 +1000,7 @@ def inject_minimal_styles(mobile_view_mode: str):
 
 
 def main():
-    st.set_page_config(page_title="STFU Dashboard", layout="wide")
+    st.set_page_config(page_title="STFU Dashboard", page_icon=str(FRAME_ICON_PATH), layout="wide")
 
     if "mobile_view_mode" not in st.session_state:
         st.session_state["mobile_view_mode"] = "List View"
