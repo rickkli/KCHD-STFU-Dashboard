@@ -3,6 +3,6 @@ geopy
 icalendar
 python-dateutil
 requests
-streamlit
+streamlit==1.44.1
 folium
 streamlit-folium
